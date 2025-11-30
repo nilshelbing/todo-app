@@ -1,0 +1,5 @@
+{
+  "name": "To-Do Dashboard",
+  "description": "Ein modernes Web-Interface für das lokale Python To-Do Backend mit Aufgabenverwaltung, Tags und Prioritäten.",
+  "requestFramePermissions": []
+}
