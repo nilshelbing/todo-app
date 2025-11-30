@@ -20,6 +20,7 @@ from db import (
     list_documents_for_task,
     get_document,
     delete_document,
+    list_tags,
 )
 
 # ---------------------------------------------------------------------------
@@ -99,6 +100,12 @@ class DocumentOut(BaseModel):
     size: Optional[int]
     created_at: str
     download_url: str
+
+
+class TagSummary(BaseModel):
+    name: str
+    total: int
+    open: int
 
 
 # ---------------------------------------------------------------------------
@@ -279,3 +286,9 @@ def delete_document_endpoint(doc_id: int):
 
     delete_document(doc_id)
     return None
+
+
+@app.get("/tags", response_model=List[TagSummary])
+def get_tags():
+    """Aggregierte Übersicht der verfügbaren Tags liefern."""
+    return list_tags()
