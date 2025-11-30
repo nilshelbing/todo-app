@@ -1,13 +1,18 @@
 import { API_BASE_URL } from '../constants';
 import { Task, TaskFormData, TaskDocument } from '../types';
 
-export const fetchTasks = async (showDone: boolean = true, search?: string, tag?: string): Promise<Task[]> => {
+export const fetchTasks = async (
+  showDone: boolean = true,
+  search?: string,
+  tag?: string,
+  signal?: AbortSignal,
+): Promise<Task[]> => {
   const params = new URLSearchParams();
   params.append('show_done', showDone ? 'true' : 'false');
   if (search) params.append('search', search);
   if (tag) params.append('tag', tag);
 
-  const response = await fetch(`${API_BASE_URL}/tasks?${params.toString()}`);
+  const response = await fetch(`${API_BASE_URL}/tasks?${params.toString()}`, { signal });
   if (!response.ok) throw new Error('Failed to fetch tasks');
   return response.json();
 };

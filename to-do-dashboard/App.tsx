@@ -18,33 +18,40 @@ function App() {
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
 
   // Load Tasks
-  const loadTasks = async () => {
+  const loadTasks = async (signal?: AbortSignal) => {
     setLoading(true);
     setError(null);
     try {
       // We assume backend handles 'search' and 'tag' efficiently.
       // But for 'Today' and 'Overdue', we filter client side from the 'open' list or 'all' list.
-      // To keep it simple, let's fetch ALL (show_done=true) and then filter locally 
+      // To keep it simple, let's fetch ALL (show_done=true) and then filter locally
       // OR let the backend do the heavy lifting for basic lists.
       // Strategy: Fetch based on search/tag if present, otherwise fetch all and sort/filter client side for speed.
-      
-      const data = await fetchTasks(true, searchQuery, tagFilter || undefined);
+
+      const data = await fetchTasks(true, searchQuery, tagFilter || undefined, signal);
       setTasks(data);
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       setError('Verbindung zum Server fehlgeschlagen. Läuft server.py?');
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     // Debounce search slightly
+    const controller = new AbortController();
     const timer = setTimeout(() => {
-        loadTasks();
+        loadTasks(controller.signal);
     }, 300);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, tagFilter]); 
+  }, [searchQuery, tagFilter]);
 
   // Derived State for Tabs (Overdue/Today)
   const filteredTasks = useMemo(() => {
