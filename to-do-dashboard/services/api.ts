@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '../constants';
-import { Task, TaskFormData, TaskDocument } from '../types';
+import { Task, TaskFormData, TaskDocument, TagSummary } from '../types';
 
 export const fetchTasks = async (
   showDone: boolean = true,
@@ -97,5 +97,13 @@ export const deleteDocument = async (docId: number): Promise<void> => {
   if (!response.ok) {
     throw new Error('Failed to delete document');
   }
+};
+
+export const fetchTags = async (): Promise<TagSummary[]> => {
+  const response = await fetch(`${API_BASE_URL}/tags`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch tags');
+  }
+  return response.json();
 };
 

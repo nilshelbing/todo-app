@@ -29,3 +29,9 @@ export interface TaskFormData {
   notes: string;
   tags: string; // Comma separated for input
 }
+
+export interface TagSummary {
+  name: string;
+  total: number;
+  open: number;
+}

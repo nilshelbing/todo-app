@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, Filter, RefreshCw, XCircle } from 'lucide-react';
-import { fetchTasks, createTask, updateTask, deleteTask } from './services/api';
-import { Task, TaskFilter, TaskFormData } from './types';
+import { Plus, Search, Filter, RefreshCw, XCircle, Hash, Tag } from 'lucide-react';
+import { fetchTasks, createTask, updateTask, deleteTask, fetchTags } from './services/api';
+import { Task, TaskFilter, TaskFormData, TagSummary } from './types';
 import TaskCard from './components/TaskCard';
 import TaskForm from './components/TaskForm';
 
@@ -9,6 +9,9 @@ function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tagsLoading, setTagsLoading] = useState(false);
+  const [tagError, setTagError] = useState<string | null>(null);
+  const [availableTags, setAvailableTags] = useState<TagSummary[]>([]);
 
   // UI State
   const [currentFilter, setCurrentFilter] = useState<TaskFilter>('all');
@@ -40,6 +43,19 @@ function App() {
     }
   };
 
+  const loadTags = async () => {
+    setTagsLoading(true);
+    setTagError(null);
+    try {
+      const data = await fetchTags();
+      setAvailableTags(data);
+    } catch (err) {
+      setTagError('Tags konnten nicht geladen werden.');
+    } finally {
+      setTagsLoading(false);
+    }
+  };
+
   useEffect(() => {
     // Debounce search slightly
     const controller = new AbortController();
@@ -52,6 +68,10 @@ function App() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, tagFilter]);
+
+  useEffect(() => {
+    loadTags();
+  }, []);
 
   // Derived State for Tabs (Overdue/Today)
   const filteredTasks = useMemo(() => {
@@ -96,14 +116,14 @@ function App() {
   // Handlers
   const handleCreate = async (data: TaskFormData) => {
     await createTask(data);
-    await loadTasks();
+    await Promise.all([loadTasks(), loadTags()]);
   };
 
   const handleUpdate = async (data: TaskFormData) => {
     if (editingTask) {
         await updateTask(editingTask.id, data);
         setEditingTask(undefined);
-        await loadTasks();
+        await Promise.all([loadTasks(), loadTags()]);
     }
   };
 
@@ -114,6 +134,7 @@ function App() {
     
     try {
         await updateTask(task.id, { done: newStatus });
+        await loadTags();
     } catch (e) {
         // Revert on error
         setTasks(prev => prev.map(t => t.id === task.id ? { ...t, done: !newStatus } : t));
@@ -126,6 +147,7 @@ function App() {
     try {
         await deleteTask(task.id);
         setTasks(prev => prev.filter(t => t.id !== task.id));
+        await loadTags();
     } catch (e) {
         alert('Löschen fehlgeschlagen.');
     }
@@ -333,6 +355,39 @@ function App() {
                   }`}
                 >
                   {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500 font-semibold">
+              <Hash size={14} />
+              Tags
+              {tagsLoading && <span className="text-[11px] text-gray-400">(lädt...)</span>}
+              {tagError && <span className="text-[11px] text-red-500">{tagError}</span>}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {availableTags.length === 0 && !tagsLoading && (
+                <span className="text-xs text-gray-400">Noch keine Tags vorhanden</span>
+              )}
+              {availableTags.map(tag => (
+                <button
+                  key={tag.name}
+                  onClick={() => setTagFilter(tag.name)}
+                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm transition-colors ${
+                    tagFilter === tag.name
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                      : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-200 hover:text-indigo-700'
+                  }`}
+                >
+                  <span className="inline-flex items-center gap-1 font-medium">
+                    <Tag size={12} />
+                    {tag.name}
+                  </span>
+                  <span className="text-xs text-gray-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                    {tag.open}/{tag.total}
+                  </span>
                 </button>
               ))}
             </div>

@@ -18,6 +18,7 @@ from db import (
     list_documents_for_task,
     get_document,
     delete_document,
+    list_tags,
 )
 
 app = Flask(__name__)
@@ -311,6 +312,12 @@ def delete_document_endpoint(doc_id):
 
     delete_document(doc_id)
     return jsonify({"status": "deleted"})
+
+
+@app.get("/tags")
+def get_tags():
+    """Liefert eine aggregierte Übersicht aller verwendeten Tags."""
+    return jsonify(list_tags())
 
 
 if __name__ == "__main__":

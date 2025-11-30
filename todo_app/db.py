@@ -193,6 +193,26 @@ def update_task(task_id, title=None, priority=None, due_date=None, notes=None, t
     with get_conn() as conn:
         conn.execute(f"UPDATE tasks SET {set_clause} WHERE id = ?", params)
         conn.commit()
+
+
+def list_tags():
+    """Gibt alle vorhandenen Tags inklusive Anzahl offener Aufgaben zurück."""
+    with get_conn() as conn:
+        cur = conn.execute(
+            "SELECT tags, done FROM tasks WHERE tags IS NOT NULL AND tags != ''"
+        )
+        counts = {}
+
+        for row in cur.fetchall():
+            for tag in str_to_tags(row["tags"]):
+                if tag not in counts:
+                    counts[tag] = {"name": tag, "total": 0, "open": 0}
+
+                counts[tag]["total"] += 1
+                if not row["done"]:
+                    counts[tag]["open"] += 1
+
+        return sorted(counts.values(), key=lambda entry: (-entry["open"], entry["name"]))
 def add_document(task_id, original_name, stored_name, content_type, size):
     """Legt einen Dokument-Datensatz zu einer Aufgabe an und gibt die neue ID zurück."""
     now = datetime.utcnow().isoformat()
