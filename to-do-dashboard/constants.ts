@@ -1,4 +1,6 @@
-export const API_BASE_URL = 'http://localhost:8000';
+const { VITE_API_BASE_URL } = import.meta.env;
+
+export const API_BASE_URL = VITE_API_BASE_URL || 'http://localhost:8000';
 
 export const PRIORITY_COLORS: Record<number, string> = {
   1: 'bg-red-100 text-red-800 border-red-200',
