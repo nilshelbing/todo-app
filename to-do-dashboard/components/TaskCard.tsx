@@ -68,7 +68,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onToggleDone, onEdit, onDelet
 
 
   return (
-    <div className={`group bg-white rounded-xl border transition-all duration-200 hover:shadow-md ${task.done ? 'opacity-60 bg-gray-50 border-gray-100' : 'border-gray-200'}`}>
+    <div className={`group bg-white rounded-xl border transition-all duration-200 hover:shadow-lg ${task.done ? 'opacity-70 bg-gray-50 border-gray-100' : 'border-gray-100'} shadow-[0_8px_20px_rgba(15,23,42,0.04)]`}>
       <div className="p-4 sm:p-5 flex gap-4 items-start">
         
         {/* Checkbox / Done Status */}
@@ -81,20 +81,32 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onToggleDone, onEdit, onDelet
 
         <div className="flex-grow min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <h3 className={`font-medium text-lg leading-snug truncate pr-2 ${task.done ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-              {task.title}
-            </h3>
-            
-            {/* Priority Badge */}
-            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${PRIORITY_COLORS[task.priority]}`}>
-              Prio {task.priority}
-            </span>
+            <div className="flex flex-col gap-1 min-w-0">
+              <div className="flex items-center gap-2">
+                {isOverdue && <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 text-red-700 text-xs font-semibold">Überfällig</span>}
+                {isDueToday && !isOverdue && <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold">Heute</span>}
+                {task.done && <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-semibold">Erledigt</span>}
+              </div>
+              <h3 className={`font-semibold text-lg leading-snug pr-2 break-words ${task.done ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                {task.title}
+              </h3>
+              <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border ${PRIORITY_COLORS[task.priority]}`}>
+                  Priorität {task.priority} · {PRIORITY_LABELS[task.priority]}
+                </span>
+                {documents.length > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-100 text-slate-700">
+                    📎 {documents.length} Datei{documents.length > 1 ? 'en' : ''}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Meta Info Row */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm text-gray-500">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 text-sm text-gray-600">
             {task.due_date && (
-               <div className={`flex items-center gap-1.5 ${isOverdue ? 'text-red-600 font-medium' : isDueToday ? 'text-orange-600 font-medium' : ''}`}>
+               <div className={`flex items-center gap-1.5 ${isOverdue ? 'text-red-600 font-semibold' : isDueToday ? 'text-orange-600 font-semibold' : ''}`}>
                  <Calendar size={14} />
                  <span>
                     {isOverdue ? 'Überfällig: ' : isDueToday ? 'Heute fällig: ' : 'Fällig: '}
@@ -103,16 +115,19 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onToggleDone, onEdit, onDelet
                </div>
             )}
           </div>
-          
+
           {/* Notes */}
           {task.notes && (
-            <p className="mt-2 text-sm text-gray-600 line-clamp-2">{task.notes}</p>
+            <p className="mt-2 text-sm text-gray-600 leading-relaxed bg-slate-50 border border-slate-100 rounded-lg px-3 py-2">{task.notes}</p>
           )}
       {/* Dokumentenbereich */}
-      <div className="mt-3 border-t border-gray-100 pt-2">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-xs font-semibold text-gray-500">Dokumente</span>
-          <label className="cursor-pointer text-xs text-blue-600 hover:underline">
+      <div className="mt-3 border border-dashed border-gray-200 rounded-lg p-3 bg-gradient-to-br from-slate-50 to-white">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+            <span className="text-blue-600">Dokumente</span>
+            {docsLoading && <span className="text-xs text-gray-500">lädt...</span>}
+          </div>
+          <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100">
             Datei anhängen
             <input
               type="file"
@@ -122,12 +137,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onToggleDone, onEdit, onDelet
           </label>
         </div>
 
-        {docsLoading && (
-          <p className="text-xs text-gray-400">Lade Dokumente...</p>
-        )}
-
         {docsError && (
-          <p className="text-xs text-red-500">{docsError}</p>
+          <p className="text-xs text-red-500 mb-1">{docsError}</p>
         )}
 
         {documents.length > 0 ? (
@@ -135,13 +146,13 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onToggleDone, onEdit, onDelet
             {documents.map(doc => (
               <li
                 key={doc.id}
-                className="flex items-center justify-between text-xs text-gray-700"
+                className="flex items-center justify-between text-xs text-gray-700 bg-white border border-gray-100 rounded-md px-2 py-1"
               >
                 <a
                   href={`${API_BASE_URL}${doc.download_url}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="truncate max-w-[220px] hover:underline"
+                  className="truncate max-w-[220px] hover:text-blue-700"
                 >
                   {doc.original_name}
                 </a>
@@ -156,7 +167,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onToggleDone, onEdit, onDelet
             ))}
           </ul>
         ) : !docsLoading ? (
-          <p className="text-xs text-gray-400">Keine Dokumente</p>
+          <p className="text-xs text-gray-400">Noch keine Dateien angehängt</p>
         ) : null}
       </div>
 
@@ -167,7 +178,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onToggleDone, onEdit, onDelet
                 <button
                   key={tag}
                   onClick={(e) => { e.stopPropagation(); onTagClick(tag); }}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-xs text-gray-600 hover:bg-gray-200 transition-colors"
+                  className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-100 text-xs text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors border border-transparent hover:border-blue-200"
                 >
                   <Tag size={10} />
                   {tag}

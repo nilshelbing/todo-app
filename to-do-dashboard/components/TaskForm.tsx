@@ -70,27 +70,31 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, isOpen, onClose, onSub
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <div className="rounded-lg bg-blue-50 border border-blue-100 p-3 text-sm text-blue-800">
+            Nutze prägnante Titel und setze ein Datum für klare Prioritäten. Tags helfen dir beim schnellen Filtern im Dashboard.
+          </div>
+
           {/* Title */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Titel</label>
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">Titel</label>
             <input
               type="text"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all shadow-sm"
               placeholder="Was muss erledigt werden?"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             />
+            <p className="text-xs text-gray-500">Formuliere klar, z. B. "Präsentation finalisieren".</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Priority */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Priorität</label>
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">Priorität</label>
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
                 value={formData.priority}
                 onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) })}
               >
@@ -100,42 +104,46 @@ const TaskForm: React.FC<TaskFormProps> = ({ initialData, isOpen, onClose, onSub
                 <option value={4}>4 - Niedrig</option>
                 <option value={5}>5 - Minimal</option>
               </select>
+              <p className="text-xs text-gray-500">Wähle 1-2 für wichtige Aufgaben.</p>
             </div>
 
             {/* Due Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Fälligkeitsdatum</label>
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-gray-700">Fälligkeitsdatum</label>
               <input
                 type="date"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
                 value={formData.due_date}
                 onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
               />
+              <p className="text-xs text-gray-500">Lass das Feld leer, wenn es keinen festen Termin gibt.</p>
             </div>
           </div>
 
           {/* Tags */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tags (kommagetrennt)</label>
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">Tags (kommagetrennt)</label>
             <input
               type="text"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
               placeholder="arbeit, haushalt, wichtig"
               value={formData.tags}
               onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
             />
+            <p className="text-xs text-gray-500">Beispiele: "meeting", "privat", "schnell".</p>
           </div>
 
           {/* Notes */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notizen</label>
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">Notizen</label>
             <textarea
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none shadow-sm"
               rows={3}
               placeholder="Details zur Aufgabe..."
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             />
+            <p className="text-xs text-gray-500">Halte Kontext, Links oder Zwischenschritte fest.</p>
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
