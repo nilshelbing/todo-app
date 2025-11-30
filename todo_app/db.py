@@ -117,7 +117,11 @@ def list_tasks(
     show_done=True,
     search=None,
     tag=None,
+    note_search=None,
+    tag_search=None,
     order_by="priority, due_date IS NULL, due_date, created_at",
+    limit=None,
+    offset=None,
 ):
     """Aufgabenliste (optional gefiltert nach Status, Suchbegriff und Tag)."""
     query = "SELECT * FROM tasks"
@@ -127,18 +131,34 @@ def list_tasks(
     if not show_done:
         conditions.append("done = 0")
     if search:
-        conditions.append("title LIKE ?")
-        params.append(f"%{search}%")
+        conditions.append("LOWER(title) LIKE ?")
+        params.append(f"%{search.lower()}%")
     if tag:
         # tags werden als "tag1,tag2,tag3" gespeichert
         # wir suchen nach ",tag," in ",tags,"
         conditions.append("(',' || IFNULL(tags, '') || ',') LIKE ?")
         params.append(f"%,{tag.lower()},%")
+    if note_search:
+        conditions.append("LOWER(IFNULL(notes, '')) LIKE ?")
+        params.append(f"%{note_search.lower()}%")
+    if tag_search:
+        conditions.append("LOWER(IFNULL(tags, '')) LIKE ?")
+        params.append(f"%{tag_search.lower()}%")
 
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
 
     query += " ORDER BY " + order_by
+
+    if limit is not None:
+        query += " LIMIT ?"
+        params.append(limit)
+        if offset is not None:
+            query += " OFFSET ?"
+            params.append(offset)
+    elif offset is not None:
+        query += " LIMIT -1 OFFSET ?"
+        params.append(offset)
 
     with get_conn() as conn:
         cur = conn.execute(query, params)

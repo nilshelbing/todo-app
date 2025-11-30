@@ -14,6 +14,10 @@ function App() {
   const [currentFilter, setCurrentFilter] = useState<TaskFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [noteSearch, setNoteSearch] = useState('');
+  const [tagTextSearch, setTagTextSearch] = useState('');
+  const [limit, setLimit] = useState<string>('');
+  const [offset, setOffset] = useState<string>('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
 
@@ -28,7 +32,21 @@ function App() {
       // OR let the backend do the heavy lifting for basic lists.
       // Strategy: Fetch based on search/tag if present, otherwise fetch all and sort/filter client side for speed.
       
-      const data = await fetchTasks(true, searchQuery, tagFilter || undefined);
+      const parsedLimit = limit === '' ? undefined : Number(limit);
+      const parsedOffset = offset === '' ? undefined : Number(offset);
+
+      const safeLimit = typeof parsedLimit === 'number' && !Number.isNaN(parsedLimit) ? parsedLimit : undefined;
+      const safeOffset = typeof parsedOffset === 'number' && !Number.isNaN(parsedOffset) ? parsedOffset : undefined;
+
+      const data = await fetchTasks(
+        true,
+        searchQuery,
+        tagFilter || undefined,
+        noteSearch || undefined,
+        tagTextSearch || undefined,
+        safeLimit,
+        safeOffset,
+      );
       setTasks(data);
     } catch (err) {
       setError('Verbindung zum Server fehlgeschlagen. Läuft server.py?');
@@ -44,7 +62,7 @@ function App() {
     }, 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, tagFilter]); 
+  }, [searchQuery, tagFilter, noteSearch, tagTextSearch, limit, offset]);
 
   // Derived State for Tabs (Overdue/Today)
   const filteredTasks = useMemo(() => {
@@ -174,32 +192,92 @@ function App() {
         )}
 
         {/* Filters & Stats */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-            {/* Search */}
-            <div className="relative w-full sm:w-72">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search size={16} className="text-gray-400" />
+        <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                {/* Search */}
+                <div className="relative w-full sm:w-72">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search size={16} className="text-gray-400" />
+                    </div>
+                    <input
+                        type="text"
+                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
+                        placeholder="Suche im Titel..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                 </div>
-                <input
-                    type="text"
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
-                    placeholder="Suche..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
+
+                {/* Active Tag Filter Display */}
+                {tagFilter && (
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm">
+                        <Filter size={14} />
+                        Tag: {tagFilter}
+                        <button onClick={() => setTagFilter(null)} className="hover:text-indigo-900 ml-1"><XCircle size={14} /></button>
+                    </div>
+                )}
+
+                <div className="text-sm text-gray-500">
+                    <span className="font-medium text-gray-900">{stats.open}</span> Offen / {stats.total} Gesamt
+                </div>
             </div>
 
-            {/* Active Tag Filter Display */}
-            {tagFilter && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm">
-                    <Filter size={14} />
-                    Tag: {tagFilter}
-                    <button onClick={() => setTagFilter(null)} className="hover:text-indigo-900 ml-1"><XCircle size={14} /></button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="relative w-full">
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Notizsuche</label>
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search size={16} className="text-gray-400" />
+                        </div>
+                        <input
+                            type="text"
+                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
+                            placeholder="Text in Notizen suchen"
+                            value={noteSearch}
+                            onChange={(e) => setNoteSearch(e.target.value)}
+                        />
+                    </div>
                 </div>
-            )}
-            
-            <div className="text-sm text-gray-500">
-                <span className="font-medium text-gray-900">{stats.open}</span> Offen / {stats.total} Gesamt
+                <div className="relative w-full">
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Tags durchsuchen</label>
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Filter size={16} className="text-gray-400" />
+                        </div>
+                        <input
+                            type="text"
+                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
+                            placeholder="Tag-Text durchsuchen"
+                            value={tagTextSearch}
+                            onChange={(e) => setTagTextSearch(e.target.value)}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Limit</label>
+                    <input
+                        type="number"
+                        min={0}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
+                        placeholder="Alle"
+                        value={limit}
+                        onChange={(e) => setLimit(e.target.value)}
+                    />
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Offset</label>
+                    <input
+                        type="number"
+                        min={0}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
+                        placeholder="0"
+                        value={offset}
+                        onChange={(e) => setOffset(e.target.value)}
+                    />
+                </div>
             </div>
         </div>
 

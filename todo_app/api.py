@@ -142,8 +142,20 @@ def get_tasks(
     show_done: bool = Query(True, description="Erledigte Aufgaben mit anzeigen?"),
     search: Optional[str] = Query(None, description="Suche im Titel"),
     tag: Optional[str] = Query(None, description="Nach einem Tag filtern"),
+    note_search: Optional[str] = Query(None, description="Suche in Notizen"),
+    tag_search: Optional[str] = Query(None, description="Textsuche in Tags"),
+    limit: Optional[int] = Query(None, description="Maximale Anzahl zurückgeben", ge=0),
+    offset: Optional[int] = Query(None, description="Ergebnisse überspringen", ge=0),
 ):
-    rows = list_tasks(show_done=show_done, search=search, tag=tag)
+    rows = list_tasks(
+        show_done=show_done,
+        search=search,
+        tag=tag,
+        note_search=note_search,
+        tag_search=tag_search,
+        limit=limit,
+        offset=offset,
+    )
     return [row_to_task(r) for r in rows]
 
 
