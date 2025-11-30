@@ -1,3 +1,5 @@
+import logging
+import os
 from pathlib import Path
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -21,6 +23,26 @@ from db import (
 app = Flask(__name__)
 CORS(app)  # erlaubt Zugriffe vom React-Frontend (http://localhost:3000)
 init_db()
+
+logger = logging.getLogger(__name__)
+
+MAX_UPLOAD_SIZE = int(os.getenv("MAX_UPLOAD_SIZE_BYTES", 5 * 1024 * 1024))
+ALLOWED_MIME_TYPES = {
+    mime.strip()
+    for mime in os.getenv(
+        "ALLOWED_UPLOAD_MIME_TYPES",
+        "application/pdf,image/png,image/jpeg,text/plain",
+    ).split(",")
+    if mime.strip()
+}
+ALLOWED_EXTENSIONS = {
+    suffix if suffix.startswith(".") else f".{suffix}"
+    for suffix in os.getenv(
+        "ALLOWED_UPLOAD_EXTENSIONS",
+        ".pdf,.png,.jpg,.jpeg,.txt",
+    ).split(",")
+    if suffix.strip()
+}
 
 
 def row_to_dict(row):
@@ -184,14 +206,73 @@ def upload_document(task_id):
     if file.filename == "":
         return jsonify({"error": "empty filename"}), 400
 
+    if request.content_length and request.content_length > MAX_UPLOAD_SIZE:
+        logger.warning(
+            "Upload rejected: content length exceeds limit",
+            extra={"task_id": task_id, "content_length": request.content_length},
+        )
+        return (
+            jsonify(
+                {
+                    "error": "file too large",
+                    "detail": f"max {MAX_UPLOAD_SIZE} bytes allowed",
+                }
+            ),
+            400,
+        )
+
     original_name = file.filename
-    suffix = Path(original_name).suffix
+    suffix = Path(original_name).suffix.lower()
+    if suffix not in ALLOWED_EXTENSIONS:
+        logger.warning(
+            "Upload rejected: invalid extension",
+            extra={"task_id": task_id, "extension": suffix},
+        )
+        return (
+            jsonify(
+                {
+                    "error": "invalid file type",
+                    "detail": "extension not allowed",
+                }
+            ),
+            400,
+        )
+    content_type = (file.mimetype or "").lower()
+    if content_type not in ALLOWED_MIME_TYPES:
+        logger.warning(
+            "Upload rejected: invalid mime type",
+            extra={"task_id": task_id, "mime": content_type},
+        )
+        return (
+            jsonify(
+                {
+                    "error": "invalid file type",
+                    "detail": "mime type not allowed",
+                }
+            ),
+            400,
+        )
     stored_name = f"{uuid.uuid4().hex}{suffix}"
-    content_type = file.mimetype
     filepath = ATTACHMENTS_DIR / stored_name
 
     file.save(filepath)
     size = filepath.stat().st_size
+
+    if size > MAX_UPLOAD_SIZE:
+        filepath.unlink(missing_ok=True)
+        logger.warning(
+            "Upload rejected after save: file exceeds limit",
+            extra={"task_id": task_id, "size": size},
+        )
+        return (
+            jsonify(
+                {
+                    "error": "file too large",
+                    "detail": f"max {MAX_UPLOAD_SIZE} bytes allowed",
+                }
+            ),
+            400,
+        )
 
     doc_id = add_document(
         task_id=task_id,
